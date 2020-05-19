@@ -5,6 +5,7 @@ import cors from 'cors'
 import bodyParser from 'body-parser'
 import sockjs from 'sockjs'
 
+import axios from 'axios'
 import cookieParser from 'cookie-parser'
 import Html from '../client/html'
 
@@ -12,7 +13,27 @@ let connections = []
 
 const port = process.env.PORT || 8080
 const server = express()
+//  const setHeaders = (/* req, */ res, next) => {
+//   res.set('x-skillcrucial-user', '7e61eef1-dc58-44ce-9901-3871cce40541')
+//   res.set('Access-Control-Expose-Headers', 'X-SKILLCRUCIAL-USER')
+//    next()
+// }
 
+const { readFile, writeFile, unlink } = require('fs').promises
+
+const writeUsers = async (data) => {
+  return writeFile(`${__dirname}/test.json`, JSON.stringify(data), { encoding: 'utf8' })
+}
+const readUsers = async () => {
+  return readFile(`${__dirname}/test.json`, { encoding: 'utf8' })
+    .then((data) => JSON.parse(data))
+    .catch(async () => {
+      const { data: users } = await axios.get('https://jsonplaceholder.typicode.com/users')
+      await writeUsers(users)
+      return users
+    })
+}
+// server.use(setHeaders)
 server.use(cors())
 
 server.use(express.static(path.resolve(__dirname, '../dist/assets')))
@@ -20,6 +41,52 @@ server.use(bodyParser.urlencoded({ limit: '50mb', extended: true, parameterLimit
 server.use(bodyParser.json({ limit: '50mb', extended: true }))
 
 server.use(cookieParser())
+
+server.get('/api/v1/users', async (req, res) => {
+  const users = await readUsers()
+  res.set('x-skillcrucial-user', '7e61eef1-dc58-44ce-9901-3871cce40541')
+  res.set('Access-Control-Expose-Headers', 'X-SKILLCRUCIAL-USER')
+  res.json(users)
+})
+server.post('/api/v1/users', async (req, res) => {
+  const newUser = req.body
+  let users = await readUsers()
+  newUser.id = users.length + 1
+  users = [...users, newUser]
+  await writeUsers(users)
+  res.set('x-skillcrucial-user', '7e61eef1-dc58-44ce-9901-3871cce40541')
+  res.set('Access-Control-Expose-Headers', 'X-SKILLCRUCIAL-USER')
+  res.json({ status: 'success', id: newUser.id })
+})
+server.patch('/api/v1/:user', async (req, res) => {
+  const { user } = req.params
+  const newData = req.body
+  const users = await readUsers()
+  const updateUser = users.map((it) => {
+    return it.id === +user ? Object.assign(it, newData) : it
+  })
+  await writeUsers(updateUser)
+  res.set('x-skillcrucial-user', '7e61eef1-dc58-44ce-9901-3871cce40541')
+  res.set('Access-Control-Expose-Headers', 'X-SKILLCRUCIAL-USER')
+  res.json({ status: 'success', id: user })
+})
+
+server.delete('/api/v1/:user', async (req, res) => {
+  const { user } = req.params
+  const users = await readUsers()
+  const newArr = users.filter((it) => it.id !== +user)
+  await writeUsers(newArr)
+  res.set('x-skillcrucial-user', '7e61eef1-dc58-44ce-9901-3871cce40541')
+  res.set('Access-Control-Expose-Headers', 'X-SKILLCRUCIAL-USER')
+  res.json({ status: 'success', id: user })
+})
+
+server.delete('/api/v1/users', async (req, res) => {
+  await unlink(`${__dirname}/test.json`)
+  res.set('x-skillcrucial-user', '7e61eef1-dc58-44ce-9901-3871cce40541')
+  res.set('Access-Control-Expose-Headers', 'X-SKILLCRUCIAL-USER')
+  res.json()
+})
 
 server.use('/api/', (req, res) => {
   res.status(404)
