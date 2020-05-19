@@ -58,7 +58,7 @@ server.post('/api/v1/users', async (req, res) => {
   res.set('Access-Control-Expose-Headers', 'X-SKILLCRUCIAL-USER')
   res.json({ status: 'success', id: newUser.id })
 })
-server.patch('/api/v1/:user', async (req, res) => {
+server.patch('/api/v1/users/:user', async (req, res) => {
   const { user } = req.params
   const newData = req.body
   const users = await readUsers()
