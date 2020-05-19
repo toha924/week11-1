@@ -71,7 +71,7 @@ server.patch('/api/v1/users/:user', async (req, res) => {
   res.json({ status: 'success', id: user })
 })
 
-server.delete('/api/v1/:user', async (req, res) => {
+server.delete('/api/v1/users/:user', async (req, res) => {
   const { user } = req.params
   const users = await readUsers()
   const newArr = users.filter((it) => it.id !== +user)
