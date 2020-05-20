@@ -49,14 +49,14 @@ server.get('/api/v1/users', async (req, res) => {
   res.json(users)
 })
 server.post('/api/v1/users', async (req, res) => {
+  const users = await readUsers()
   const newUser = req.body
-  let users = await readUsers()
-  newUser.id = users.length + 1
-  users = [...users, newUser]
-  await writeUsers(users)
+  newUser.id = +users[users.length - 1].id + 1
+  const patchedUsers = [...users, newUser]
+  await writeUsers(patchedUsers)
   res.set('x-skillcrucial-user', '7e61eef1-dc58-44ce-9901-3871cce40541')
   res.set('Access-Control-Expose-Headers', 'X-SKILLCRUCIAL-USER')
-  res.json({ status: 'success', id: newUser.id })
+  res.json({ status: 'success', id: newUser.id, patchedUsers })
 })
 server.patch('/api/v1/users/:user', async (req, res) => {
   const { user } = req.params
